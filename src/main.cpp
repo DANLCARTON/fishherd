@@ -68,7 +68,6 @@ void Fish::draw(p6::Context& ctx) {
     float g = colorValue(this->angle(), PI2/3.f);
     float b = colorValue(this->angle(), 2.f*PI2/3.f);
     ctx.stroke = p6::Color{r, g, b, 1.f};
-    ctx.stroke_weight = 0.01f;
     ctx.circle(p6::Center{this->position()}, p6::Radius{0.03f});
     ctx.line(this->position(), glm::vec2 {
         this->position()[0]-std::cos(this->angle())*this->speed()*8,
@@ -141,6 +140,7 @@ int main(int argc, char* argv[])
     // Declare your infinite update loop.
     ctx.update = [&]() {
         
+        ctx.stroke_weight = 0.01f;
         ctx.fill = {1, 1, 1, 0.04f};
         ctx.rectangle(p6::FullScreen{});
         ctx.circle(
