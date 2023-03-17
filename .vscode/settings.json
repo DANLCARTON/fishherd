@@ -1,0 +1,10 @@
+{
+    "cmake.configureOnOpen": true,
+    "cSpell.words": [
+        "FISHHERD"
+    ],
+    "cmake.generator": "Ninja",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build"
+    ]
+}
