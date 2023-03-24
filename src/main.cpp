@@ -7,7 +7,7 @@
 #include <iostream>
 
 const float PI2 = 6.28f;
-const unsigned int FISH_NUMBER = 50;
+const unsigned int FISH_NUMBER = 30;
 bool SCREEN_ENCOUNTER_METHOD = false; 
 const float ALIGNEMENT_RADIUS = 0.3;
 const float SEPARATION_RADIUS = 0.15;
@@ -73,6 +73,10 @@ void Fish::draw(p6::Context& ctx) {
     float b = colorValue(this->angle(), 2.f*PI2/3.f);
     ctx.stroke = p6::Color{r, g, b, 1.f};
     ctx.circle(p6::Center{this->position()}, p6::Radius{0.03f});
+    ctx.stroke = p6::Color{1.f, 0, 0, .5f};
+    ctx.circle(p6::Center{this->position()}, p6::Radius{SEPARATION_RADIUS});
+    ctx.stroke = p6::Color{0, 1.f, 0, .5f};
+    ctx.circle(p6::Center{this->position()}, p6::Radius{ALIGNEMENT_RADIUS});
     ctx.line(this->position(), glm::vec2 {
         this->position()[0]-std::cos(this->angle())*this->speed()*8,
         this->position()[1]-std::sin(this->angle())*this->speed()*8
@@ -131,9 +135,14 @@ float distance(Fish fish1, Fish fish2) {
 
 void Alignement(Fish currentFish, Fish &otherFish) {
     float dist = distance(currentFish, otherFish);
-    //float futDist = futureDistance(currentFish, otherFish);
     float direction = currentFish.angle()-otherFish.angle();
     if (dist < ALIGNEMENT_RADIUS) otherFish.turn(direction * 0.01);
+}
+
+void Separation(Fish currentFish, Fish &otherFish) {
+    float dist = distance(currentFish, otherFish);
+    float direction = currentFish.angle()-otherFish.angle();
+    if (dist < SEPARATION_RADIUS) otherFish.turn(-direction*0.02);
 }
 
 int main(int argc, char* argv[])
@@ -172,7 +181,10 @@ int main(int argc, char* argv[])
             fish.draw(ctx);
             fish.move();
             for (Fish &otherFish : herd) {
-                if (fish.id != otherFish.id) Alignement(fish, otherFish);
+                if (fish.id != otherFish.id) {
+                    Alignement(fish, otherFish);
+                    Separation(fish, otherFish);
+                }
             }
             if (SCREEN_ENCOUNTER_METHOD) bounce(fish, ctx); 
             else passThrough(fish, ctx);
