@@ -7,17 +7,8 @@
 #include <iostream>
 
 const float PI2 = 6.28f;
-const unsigned int FISH_NUMBER = 100;
+const unsigned int FISH_NUMBER = 50;
 bool SCREEN_ENCOUNTER_METHOD = false; 
-
-float RandomFloat(float a, float b) {
-    float random = ((float)rand()) / (float)RAND_MAX;
-    float diff   = b - a;
-    float r      = random * diff;
-    return a + r;
-}
-
-
 
 class Fish {
 
@@ -99,7 +90,7 @@ void bounce(Fish &fish, const p6::Context &ctx) {
 
 
 glm::vec2 randomGlmVec2(float a, float b) {
-    glm::vec2 temp(RandomFloat(a, b), RandomFloat(a, b));
+    glm::vec2 temp(p6::random::number(a, b), p6::random::number(a, b));
     return temp;
 }
 
@@ -107,7 +98,7 @@ std::vector<Fish> createHerd(const unsigned int fishNumber) {
     std::vector<Fish> fishHerd;
     for (size_t i = 0; i < fishNumber; ++i) {
         glm::vec2 temp = randomGlmVec2(-1, 1);
-        double angle = RandomFloat(0.f, PI2);
+        double angle = p6::random::number(0.f, PI2);
         //double angle = 0.0;
         fishHerd.push_back(Fish(temp, angle, .01));
     }
