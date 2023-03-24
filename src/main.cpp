@@ -9,6 +9,8 @@
 const float PI2 = 6.28f;
 const unsigned int FISH_NUMBER = 50;
 bool SCREEN_ENCOUNTER_METHOD = false; 
+const float ALIGNEMENT_RADIUS = 0.3;
+const float SEPARATION_RADIUS = 0.15;
 
 class Fish {
 
@@ -20,8 +22,10 @@ class Fish {
 
     public:
 
+        unsigned int id;
+
         Fish();
-        Fish(glm::vec2 position, double angle, double speed) {this->m_position = position; this->m_angle = angle; this->m_speed = speed;};
+        Fish(glm::vec2 position, double angle, double speed, unsigned int id) {this->m_position = position; this->m_angle = angle; this->m_speed = speed; this->id = id;};
         ~Fish() = default;
 
         glm::vec2 position() {return this->m_position;}
@@ -32,8 +36,13 @@ class Fish {
         void speed(double newSpeed) {m_speed = newSpeed;}
 
         void move();
+        void turn(float direction);
         void draw(p6::Context& ctx);
 };
+
+// - - - - - - S U R C H A R G E S   D ' O P E R A T E U R S - - - - - -
+
+// - - - - - - F O N C T I O N S   D E   B A S E - - - - - -
 
 double colorValue(double angle, float param) {
     double value = angle+param;
@@ -54,6 +63,10 @@ void Fish::move() {
     //this->m_angle -= 0.01;
 }
 
+void Fish::turn(float direction) {
+    this->m_angle += direction;
+}
+
 void Fish::draw(p6::Context& ctx) {
     float r = colorValue(this->angle(), 0.f);
     float g = colorValue(this->angle(), PI2/3.f);
@@ -66,6 +79,8 @@ void Fish::draw(p6::Context& ctx) {
     });
 
 }
+
+
 
 void passThrough(Fish &fish, const p6::Context &ctx) {
     if (fish.position()[0] >= ctx.aspect_ratio() || fish.position()[0] <= -ctx.aspect_ratio()) {
@@ -96,16 +111,30 @@ glm::vec2 randomGlmVec2(float a, float b) {
 
 std::vector<Fish> createHerd(const unsigned int fishNumber) {
     std::vector<Fish> fishHerd;
-    for (size_t i = 0; i < fishNumber; ++i) {
+    for (unsigned int i = 0; i < fishNumber; ++i) {
         glm::vec2 temp = randomGlmVec2(-1, 1);
         double angle = p6::random::number(0.f, PI2);
         //double angle = 0.0;
-        fishHerd.push_back(Fish(temp, angle, .01));
+        fishHerd.push_back(Fish(temp, angle, .01, i));
     }
     return fishHerd;
 }
 
+// - - - - - - G R O S S E S   F O N C T I O N S   L A - - - - - -
 
+float distance(Fish fish1, Fish fish2) {
+    float distanceX = fish1.position()[0] - fish2.position()[0];
+    float distanceY = fish1.position()[1] - fish2.position()[1];
+    float distance = std::sqrt(distanceX*distanceX + distanceY*distanceY);
+    return distance;
+}
+
+void Alignement(Fish currentFish, Fish &otherFish) {
+    float dist = distance(currentFish, otherFish);
+    //float futDist = futureDistance(currentFish, otherFish);
+    float direction = currentFish.angle()-otherFish.angle();
+    if (dist < ALIGNEMENT_RADIUS) otherFish.turn(direction * 0.01);
+}
 
 int main(int argc, char* argv[])
 {
@@ -142,6 +171,9 @@ int main(int argc, char* argv[])
         for (Fish &fish : herd) {
             fish.draw(ctx);
             fish.move();
+            for (Fish &otherFish : herd) {
+                if (fish.id != otherFish.id) Alignement(fish, otherFish);
+            }
             if (SCREEN_ENCOUNTER_METHOD) bounce(fish, ctx); 
             else passThrough(fish, ctx);
         }
