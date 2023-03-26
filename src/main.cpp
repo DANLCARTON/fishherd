@@ -7,10 +7,11 @@
 #include <iostream>
 
 const float PI2 = 6.28f;
-const unsigned int FISH_NUMBER = 30;
+const unsigned int FISH_NUMBER = 150;
 bool SCREEN_ENCOUNTER_METHOD = false; 
-const float ALIGNEMENT_RADIUS = 0.3;
-const float SEPARATION_RADIUS = 0.15;
+const double ALIGNMENT_RADIUS = 0.4;
+const double SEPARATION_RADIUS = 0.2;
+bool DRAW_PARAMS = false;
 
 class Fish {
 
@@ -44,10 +45,19 @@ class Fish {
 
 // - - - - - - F O N C T I O N S   D E   B A S E - - - - - -
 
-double colorValue(double angle, float param) {
-    double value = angle+param;
+int sign(float value) {
+    return value >= 0 ? 1 : -1;
+}
+
+double getInTheCircle(double value) {
     if (value < 0) while (value < 0) value += PI2;
     else while (value > PI2) value -= PI2;
+    return value;
+}
+
+double colorValue(double angle, float param) {
+    double value = angle+param;
+    value = getInTheCircle(value);
     if (value > PI2/2) value = PI2-value;
     return value/(PI2/2);
 }
@@ -67,16 +77,20 @@ void Fish::turn(float direction) {
     this->m_angle += direction;
 }
 
+void drawParams(Fish fish, p6::Context &ctx) {
+    ctx.stroke = p6::Color{1.f, 0, 0, .5f};
+    ctx.circle(p6::Center{fish.position()}, p6::Radius{SEPARATION_RADIUS});
+    ctx.stroke = p6::Color{0, 1.f, 0, .5f};
+    ctx.circle(p6::Center{fish.position()}, p6::Radius{ALIGNMENT_RADIUS});
+}
+
 void Fish::draw(p6::Context& ctx) {
     float r = colorValue(this->angle(), 0.f);
     float g = colorValue(this->angle(), PI2/3.f);
     float b = colorValue(this->angle(), 2.f*PI2/3.f);
     ctx.stroke = p6::Color{r, g, b, 1.f};
     ctx.circle(p6::Center{this->position()}, p6::Radius{0.03f});
-    ctx.stroke = p6::Color{1.f, 0, 0, .5f};
-    ctx.circle(p6::Center{this->position()}, p6::Radius{SEPARATION_RADIUS});
-    ctx.stroke = p6::Color{0, 1.f, 0, .5f};
-    ctx.circle(p6::Center{this->position()}, p6::Radius{ALIGNEMENT_RADIUS});
+    if (DRAW_PARAMS) drawParams(*this, ctx);;
     ctx.line(this->position(), glm::vec2 {
         this->position()[0]-std::cos(this->angle())*this->speed()*8,
         this->position()[1]-std::sin(this->angle())*this->speed()*8
@@ -106,20 +120,14 @@ void bounce(Fish &fish, const p6::Context &ctx) {
     }
 }
 
-
-
-glm::vec2 randomGlmVec2(float a, float b) {
-    glm::vec2 temp(p6::random::number(a, b), p6::random::number(a, b));
-    return temp;
-}
-
-std::vector<Fish> createHerd(const unsigned int fishNumber) {
+std::vector<Fish> createHerd(const unsigned int fishNumber, const p6::Context &ctx) {
     std::vector<Fish> fishHerd;
     for (unsigned int i = 0; i < fishNumber; ++i) {
-        glm::vec2 temp = randomGlmVec2(-1, 1);
+        glm::vec2 temp(p6::random::number(-ctx.aspect_ratio(), ctx.aspect_ratio()), p6::random::number(-1, 1));
         double angle = p6::random::number(0.f, PI2);
         //double angle = 0.0;
-        fishHerd.push_back(Fish(temp, angle, .01, i));
+        std::cout << i << " : " << temp[0] << "|" << temp[1] << ", " << angle << std::endl; 
+        fishHerd.push_back(Fish(temp, angle, .005, i));
     }
     return fishHerd;
 }
@@ -133,16 +141,17 @@ float distance(Fish fish1, Fish fish2) {
     return distance;
 }
 
-void Alignement(Fish currentFish, Fish &otherFish) {
+void Alignment(Fish currentFish, Fish &otherFish) {
     float dist = distance(currentFish, otherFish);
     float direction = currentFish.angle()-otherFish.angle();
-    if (dist < ALIGNEMENT_RADIUS) otherFish.turn(direction * 0.01);
+    if (SEPARATION_RADIUS < dist  && dist < ALIGNMENT_RADIUS) otherFish.turn((1/dist)*direction * 0.0002);
 }
 
 void Separation(Fish currentFish, Fish &otherFish) {
     float dist = distance(currentFish, otherFish);
     float direction = currentFish.angle()-otherFish.angle();
-    if (dist < SEPARATION_RADIUS) otherFish.turn(-direction*0.02);
+    direction = sign(direction);
+    if (dist < SEPARATION_RADIUS) otherFish.turn(-(1/(20*dist))*direction*0.0004);
 }
 
 int main(int argc, char* argv[])
@@ -162,15 +171,19 @@ int main(int argc, char* argv[])
 
 
 
-    std::vector<Fish> herd = createHerd(FISH_NUMBER);
+    std::vector<Fish> herd = createHerd(FISH_NUMBER, ctx);
 
+
+    float r = p6::random::number(0, .5);
+    float g = p6::random::number(0, .5);
+    float b = p6::random::number(0, .5);
    
 
     // Declare your infinite update loop.
     ctx.update = [&]() {
         
         ctx.stroke_weight = 0.01f;
-        ctx.fill = {1, 1, 1, 0.04f};
+        ctx.fill = {r, g, b, 0.04f};
         ctx.rectangle(p6::FullScreen{});
         ctx.circle(
             p6::Center{ctx.mouse()},
@@ -182,7 +195,7 @@ int main(int argc, char* argv[])
             fish.move();
             for (Fish &otherFish : herd) {
                 if (fish.id != otherFish.id) {
-                    Alignement(fish, otherFish);
+                    Alignment(fish, otherFish);
                     Separation(fish, otherFish);
                 }
             }
