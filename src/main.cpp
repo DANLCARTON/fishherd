@@ -7,16 +7,18 @@
 #include <iostream>
 
 const float PI2 = 6.28f;
-const unsigned int FISH_NUMBER = 75;
+const unsigned int FISH_NUMBER = 100;
 bool SCREEN_ENCOUNTER_METHOD = false; 
-const double ALIGNMENT_RADIUS = 0.20;
-const double SEPARATION_RADIUS = 0.10;
+const double ALIGNMENT_RADIUS = 0.5;
+const double SEPARATION_RADIUS = 0.25;
+const double MIN_SEPARATION_RADIUS = 0.125;
 const double WALLS_RADIUS = 0.5;
 bool DRAW_PARAMS = false;
 
-const double ALIGNMENT_STRENGTH = 0.0008;
-const double SEPARATION_STRENGTH = 0.0008;
-const double WALLS_STRENGTH = 0.0008;
+const double ALIGNMENT_STRENGTH = 0.0024;
+const double SEPARATION_STRENGTH = 0.0048;
+const double MOUSE_FISH_SEPARATION_STRENGTH = 0.0032;
+const double WALLS_STRENGTH = 0.0024;
 
 class Fish {
 
@@ -87,6 +89,8 @@ void drawParams(Fish fish, p6::Context &ctx) {
     ctx.circle(p6::Center{fish.position()}, p6::Radius{SEPARATION_RADIUS});
     ctx.stroke = p6::Color{0, 1.f, 0, .5f};
     ctx.circle(p6::Center{fish.position()}, p6::Radius{ALIGNMENT_RADIUS});
+    ctx.stroke = p6::Color(0, 0, 0, .5f);
+    ctx.circle(p6::Center{fish.position()}, p6::Radius{MIN_SEPARATION_RADIUS});
 }
 
 void Fish::draw(p6::Context& ctx) {
@@ -132,7 +136,7 @@ std::vector<Fish> createHerd(const unsigned int fishNumber, const p6::Context &c
         double angle = p6::random::number(0.f, PI2);
         //double angle = 0.0;
         std::cout << i << " : " << temp[0] << "|" << temp[1] << ", " << angle << std::endl; 
-        fishHerd.push_back(Fish(temp, angle, .005, i));
+        fishHerd.push_back(Fish(temp, angle, .01, i));
     }
     return fishHerd;
 }
@@ -149,14 +153,20 @@ float distance(Fish fish1, Fish fish2) {
 void Alignment(Fish currentFish, Fish &otherFish) {
     float dist = distance(currentFish, otherFish);
     float direction = currentFish.angle()-otherFish.angle();
-    if (SEPARATION_RADIUS < dist  && dist < ALIGNMENT_RADIUS) otherFish.turn((1/dist)*direction*ALIGNMENT_STRENGTH);
+    if (SEPARATION_RADIUS < dist  && dist < ALIGNMENT_RADIUS) otherFish.turn((2/dist)*direction*ALIGNMENT_STRENGTH);
 }
 
-void Separation(Fish currentFish, Fish &otherFish) {
+void Separation(Fish &currentFish, Fish &otherFish) {
     float dist = distance(currentFish, otherFish);
     float direction = currentFish.angle()-otherFish.angle();
     direction = sign(direction);
-    if (dist < SEPARATION_RADIUS) otherFish.turn(-(1/(20*dist))*direction*SEPARATION_STRENGTH);
+    if (dist < SEPARATION_RADIUS) {
+        if (currentFish.id == 1000) otherFish.turn(-(1/(20*dist))*direction*MOUSE_FISH_SEPARATION_STRENGTH);
+        else otherFish.turn(-(1/(20*dist))*direction*SEPARATION_STRENGTH);
+    }
+    if (dist < MIN_SEPARATION_RADIUS) {
+        currentFish.turn(1/(20*dist)*direction*SEPARATION_STRENGTH);
+    }
 }
 
 void avoidTopWall(Fish &fish, double distance) {
@@ -218,13 +228,13 @@ int main(int argc, char* argv[])
     }
 
     // Actual app
-    auto ctx = p6::Context{{960, 960, "FISHHERD"}};
-    //ctx.maximize_window();
+    auto ctx = p6::Context{{.title = "FISHHERD"}};
+    ctx.maximize_window();
 
 
 
     std::vector<Fish> herd = createHerd(FISH_NUMBER, ctx);
-    Fish mouseFish = Fish(ctx.mouse(), 0, 0, 1000);
+    Fish mouseFish = Fish(ctx.mouse(), p6::random::number(0, PI2), 0, 1000);
 
 
     float r = p6::random::number(0, .5);
@@ -236,14 +246,14 @@ int main(int argc, char* argv[])
     ctx.update = [&]() {
 
         mouseFish.position(ctx.mouse());
+        mouseFish.angle(mouseFish.angle()+0.1);
+        mouseFish.draw(ctx);
         
-        ctx.stroke_weight = 0.01f;
+        ctx.stroke_weight = 0.f;
         ctx.fill = {r, g, b, 0.04f};
         ctx.rectangle(p6::FullScreen{});
-        ctx.circle(
-            p6::Center{ctx.mouse()},
-            p6::Radius{0.05f}
-        );
+        // ctx.circle(p6::Center{ctx.mouse()},p6::Radius{0.05f});
+        ctx.stroke_weight = 0.01f;
 
         for (Fish &fish : herd) {
             fish.draw(ctx);
