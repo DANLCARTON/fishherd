@@ -6,19 +6,21 @@
 #include <cmath>
 #include <iostream>
 
-const float PI2 = 6.28f;
-const unsigned int FISH_NUMBER = 100;
-bool SCREEN_ENCOUNTER_METHOD = false; 
-const double ALIGNMENT_RADIUS = 0.5;
-const double SEPARATION_RADIUS = 0.25;
-const double MIN_SEPARATION_RADIUS = 0.125;
-const double WALLS_RADIUS = 0.5;
-bool DRAW_PARAMS = false;
+const float PI2 = 6.28f; //                              BEST VALUES :
+const unsigned int FISH_NUMBER = 80; //                  80
+bool SCREEN_ENCOUNTER_METHOD = false; //                 false
+const double ALIGNMENT_RADIUS = 0.5; //                  0.5
+const double SEPARATION_RADIUS = 0.25; //                0.25
+const double MIN_SEPARATION_RADIUS = 0.125; //           0.125
+const double WALLS_RADIUS = 0.5; //                      0.5
+bool DRAW_PARAMS = false; //                             false
+const double COHESION_RADIUS = 0.75; //                  0.75  
 
-const double ALIGNMENT_STRENGTH = 0.0024;
-const double SEPARATION_STRENGTH = 0.0048;
-const double MOUSE_FISH_SEPARATION_STRENGTH = 0.0032;
-const double WALLS_STRENGTH = 0.0024;
+const double ALIGNMENT_STRENGTH = 0.0024; //             0.0024
+const double SEPARATION_STRENGTH = 0.0048; //            0.0048
+const double MOUSE_FISH_SEPARATION_STRENGTH = 0.0032; // 0.0032
+const double WALLS_STRENGTH = 0.0032; //                 0.0032
+const double COHESION_STRENGTH = 0.005; //               0.005
 
 class Fish {
 
@@ -169,31 +171,21 @@ void Separation(Fish &currentFish, Fish &otherFish) {
     }
 }
 
-void avoidTopWall(Fish &fish, double distance) {
+void avoidWall(Fish &fish, double distance, const int wall) {
     double dir = getInTheCircle(fish.angle());
-    if (dir < PI2/4 || dir > (3*PI2/4)) dir = -1;
-    else dir = 1;
-    fish.turn(1/(20*distance)*dir*WALLS_STRENGTH);
-}
-
-void avoidBottomWall(Fish &fish, double distance) {
-    double dir = getInTheCircle(fish.angle());
-    if (dir < PI2/4 || dir > (3*PI2/4)) dir = 1;
-    else dir = -1;
-    fish.turn(1/(20*distance)*dir*WALLS_STRENGTH);
-}
-
-void avoidRightWall(Fish &fish, double distance) {
-    double dir = getInTheCircle(fish.angle());
-    if (dir < PI2/2) dir = 1;
-    else dir = -1;
-    fish.turn(1/(20*distance)*dir*WALLS_STRENGTH);
-}
-
-void avoidLeftWall(Fish &fish, double distance) {
-    double dir = getInTheCircle(fish.angle());
-    if (dir < PI2/2) dir = -1;
-    else dir = 1;
+    if (wall == 0) { // top wall
+        if (dir < PI2/4 || dir > (3*PI2/4)) dir = -1;
+        else dir = 1;
+    } else if (wall == 1) { // bottom wall
+        if (dir < PI2/4 || dir > (3*PI2/4)) dir = 1;
+        else dir = -1;
+    } else if (wall == 2) { // right wall
+        if (dir < PI2/2) dir = 1;
+        else dir = -1;
+    } else { // left wall
+        if (dir < PI2/2) dir = -1;
+        else dir = 1;
+    }
     fish.turn(1/(20*distance)*dir*WALLS_STRENGTH);
 }
 
@@ -202,18 +194,23 @@ void wallSeparation(Fish &fish, const p6::Context &ctx) {
     double bottomWallDistance = fish.position()[1]+1;
     double rightWallDistance = ctx.aspect_ratio()-fish.position()[0];
     double leftWallDistance = fish.position()[0]+ctx.aspect_ratio();
-    if (topWallDistance < WALLS_RADIUS) {
-        avoidTopWall(fish, topWallDistance);
+    if (topWallDistance < WALLS_RADIUS) avoidWall(fish, topWallDistance, 0);
+    if (bottomWallDistance < WALLS_RADIUS) avoidWall(fish, bottomWallDistance, 1);
+    if (rightWallDistance < WALLS_RADIUS) avoidWall(fish, rightWallDistance, 2);
+    if (leftWallDistance < WALLS_RADIUS) avoidWall(fish, leftWallDistance, 3);
+}
+
+void Cohesion(Fish &currentFish, std::vector<Fish> &fishHerd) {
+    double averageDirection = 0;
+    double fishesInTheRadius = 0;
+    for (Fish &fish : fishHerd) {
+        if (distance(currentFish, fish) < COHESION_RADIUS) {
+            averageDirection += getInTheCircle(fish.angle());
+            ++fishesInTheRadius;
+        } 
     }
-    if (bottomWallDistance < WALLS_RADIUS) {
-        avoidBottomWall(fish, bottomWallDistance);
-    }
-    if (rightWallDistance < WALLS_RADIUS) {
-        avoidRightWall(fish, rightWallDistance);
-    }
-    if (leftWallDistance < WALLS_RADIUS) {
-        avoidLeftWall(fish, leftWallDistance);
-    }
+    averageDirection = averageDirection/fishesInTheRadius;
+    currentFish.turn((averageDirection-getInTheCircle(currentFish.angle()))*COHESION_STRENGTH);
 }
 
 int main(int argc, char* argv[])
@@ -266,6 +263,8 @@ int main(int argc, char* argv[])
                     wallSeparation(fish, ctx);
                 }
             }
+            
+            Cohesion(fish, herd);
             if (SCREEN_ENCOUNTER_METHOD) bounce(fish, ctx); 
             else passThrough(fish, ctx);
         }
