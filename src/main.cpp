@@ -6,6 +6,9 @@
 #include <cmath>
 #include <iostream>
 
+// TO DO : 
+// - GUI puis on sera bons pour la 2D ????
+
 const float PI2 = 6.28f; //                              BEST VALUES :
 const unsigned int FISH_NUMBER = 80; //                  80
 bool SCREEN_ENCOUNTER_METHOD = false; //                 false
@@ -213,6 +216,8 @@ void Cohesion(Fish &currentFish, std::vector<Fish> &fishHerd) {
     currentFish.turn((averageDirection-getInTheCircle(currentFish.angle()))*COHESION_STRENGTH);
 }
 
+// - - - - - - M A I N - - - - - -
+
 int main(int argc, char* argv[])
 {
     { // Run the tests
@@ -269,8 +274,6 @@ int main(int argc, char* argv[])
             else passThrough(fish, ctx);
         }
     };
-
-
 
     // Should be done last. It starts the infinite loop.
     ctx.start();
