@@ -26,6 +26,7 @@ float SEPARATION_STRENGTH = 0.0048; //            0.0048
 const float MOUSE_FISH_SEPARATION_STRENGTH = 0.0096; // 0.0032
 float WALLS_STRENGTH = 0.0032; //                 0.0032
 float COHESION_STRENGTH = 0.005; //               0.005
+float TAIL_SIZE = 0.04; //                         0.04
 
 class Fish {
 
@@ -55,7 +56,25 @@ class Fish {
         void draw(p6::Context& ctx);
 };
 
-// - - - - - - S U R C H A R G E S   D ' O P E R A T E U R S - - - - - -
+// - - - - - - P A R A M E R T E S - - - - - -
+
+void displayGUI () {
+    ImGui::Begin("ACT ON THE FISH HERD");
+    ImGui::SliderFloat("Size", &TAIL_SIZE, 0, 1);
+    ImGui::SliderFloat("Speed", &SPEED, 0, 0.03);
+    ImGui::SliderFloat("Turn Factor", &TURN_FACTOR, 0.01, 1);
+    ImGui::SliderFloat("Separation Radius", &SEPARATION_RADIUS, 0, 1);
+    ImGui::SliderFloat("Separation strength", &SEPARATION_STRENGTH, 0, 0.0196);
+    ImGui::SliderFloat("Alignment Radius", &ALIGNMENT_RADIUS, 0, 1);
+    ImGui::SliderFloat("Alignment strength", &ALIGNMENT_STRENGTH, 0, 0.0196);
+    ImGui::SliderFloat("Cohesion Radius", &COHESION_RADIUS, 0.001, 1);
+    ImGui::SliderFloat("Cohesion strength", &COHESION_STRENGTH, 0, 0.0196);
+    ImGui::SliderFloat("Walls radius", &WALLS_RADIUS, 0, 1);
+    ImGui::SliderFloat("Walls strength", &WALLS_STRENGTH, 0, 0.0196);
+    if (ImGui::Button("Show Parameters"))
+            DRAW_PARAMS = !DRAW_PARAMS;
+    ImGui::End();
+}
 
 // - - - - - - F O N C T I O N S   D E   B A S E - - - - - -
 
@@ -88,7 +107,8 @@ void Fish::move() {
 }
 
 void Fish::turn(float direction) {
-    this->m_angle += direction*TURN_FACTOR;
+    this->m_angle += (direction*TURN_FACTOR);
+    this->angle(getInTheCircle(this->angle()));
 }
 
 void drawParams(Fish fish, p6::Context &ctx) {
@@ -98,6 +118,8 @@ void drawParams(Fish fish, p6::Context &ctx) {
     ctx.circle(p6::Center{fish.position()}, p6::Radius{ALIGNMENT_RADIUS});
     ctx.stroke = p6::Color(0, 0, 0, .5f);
     ctx.circle(p6::Center{fish.position()}, p6::Radius{MIN_SEPARATION_RADIUS});
+    ctx.stroke = p6::Color(0, 0, 1.f, .5f);
+    ctx.circle(p6::Center{fish.position()}, p6::Radius{COHESION_RADIUS});
 }
 
 void Fish::draw(p6::Context& ctx) {
@@ -247,31 +269,15 @@ int main(int argc, char* argv[])
    
     // Declare your infinite update loop.
     ctx.update = [&]() {
-        // Show a simple window
-        ImGui::Begin("Test");
-        ImGui::SliderFloat("Speed", &SPEED, 0, 0.03);
-        ImGui::SliderFloat("Turn Factor", &TURN_FACTOR, 0.01, 1);
-        ImGui::SliderFloat("Separation Radius", &SEPARATION_RADIUS, 0, 1);
-        ImGui::SliderFloat("Separation strength", &SEPARATION_STRENGTH, 0, 0.0196);
-        ImGui::SliderFloat("Alignment Radius", &ALIGNMENT_RADIUS, 0, 1);
-        ImGui::SliderFloat("Alignment strength", &ALIGNMENT_STRENGTH, 0, 0.0196);
-        ImGui::SliderFloat("Cohesion Radius", &COHESION_RADIUS, 0.001, 1);
-        ImGui::SliderFloat("Cohesion strength", &COHESION_STRENGTH, 0, 0.0196);
-        ImGui::SliderFloat("Walls radius", &WALLS_RADIUS, 0, 1);
-        ImGui::SliderFloat("Walls strength", &WALLS_STRENGTH, 0, 0.0196);
-        ImGui::End();
-        // Show the official ImGui demo window
-        // It is very useful to discover all the widgets available in ImGui
-        // ImGui::ShowDemoWindow();
 
-        std::cout << SEPARATION_RADIUS << std::endl;
+        displayGUI();
 
         mouseFish.position(ctx.mouse());
         mouseFish.angle(p6::random::number(-PI2, PI2));
         mouseFish.draw(ctx);
         
         ctx.stroke_weight = 0.f;
-        ctx.fill = {r, g, b, 0.04f};
+        ctx.fill = {r, g, b, TAIL_SIZE};
         ctx.rectangle(p6::FullScreen{});
         // ctx.circle(p6::Center{ctx.mouse()},p6::Radius{0.05f});
         ctx.stroke_weight = 0.01f;
