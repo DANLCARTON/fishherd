@@ -82,16 +82,16 @@ int sign(float value) {
 }
 
 double getInTheCircle(double value) {
-    if (value < 0) while (value < 0) value += (M_PI*2);
-    else while (value > (M_PI*2)) value -= (M_PI*2);
+    if (value < 0) while (value < 0) value += PI2;
+    else while (value > PI2) value -= PI2;
     return value;
 }
 
 double colorValue(double angle, float param) {
     double value = angle+param;
     value = getInTheCircle(value);
-    if (value > (M_PI*2)/2) value = (M_PI*2)-value;
-    return value/((M_PI*2)/2);
+    if (value > PI2/2) value = PI2-value;
+    return value/(PI2/2);
 }
 
 void Fish::move() {
@@ -120,8 +120,8 @@ void drawParams(Fish fish, p6::Context &ctx) {
 
 void Fish::draw(p6::Context& ctx) {
     float r = colorValue(this->angle(), 0.f);
-    float g = colorValue(this->angle(), (M_PI*2)/3.f);
-    float b = colorValue(this->angle(), 2.f*(M_PI*2)/3.f);
+    float g = colorValue(this->angle(), PI2/3.f);
+    float b = colorValue(this->angle(), 2.f*PI2/3.f);
     ctx.stroke = p6::Color{r, g, b, 1.f};
     ctx.circle(p6::Center{this->position()}, p6::Radius{0.03f});
     if (DRAW_PARAMS) drawParams(*this, ctx);;
@@ -178,16 +178,16 @@ void Cohesion(Fish &currentFish, std::vector<Fish> &fishHerd) {
 void avoidWall(Fish &fish, double distance, const int wall) {
     double dir = getInTheCircle(fish.angle());
     if (wall == 0) { // top wall
-        if (dir < (M_PI*2)/4 || dir > (3*(M_PI*2)/4)) dir = -1;
+        if (dir < PI2/4 || dir > (3*PI2/4)) dir = -1;
         else dir = 1;
     } else if (wall == 1) { // bottom wall
-        if (dir < (M_PI*2)/4 || dir > (3*(M_PI*2)/4)) dir = 1;
+        if (dir < PI2/4 || dir > (3*PI2/4)) dir = 1;
         else dir = -1;
     } else if (wall == 2) { // right wall
-        if (dir < (M_PI*2)/2) dir = 1;
+        if (dir < PI2/2) dir = 1;
         else dir = -1;
     } else { // left wall
-        if (dir < (M_PI*2)/2) dir = -1;
+        if (dir < PI2/2) dir = -1;
         else dir = 1;
     }
     fish.turn(1/(20*distance)*dir*WALLS_STRENGTH);
@@ -221,7 +221,7 @@ std::vector<Fish> createHerd(const unsigned int fishNumber, const p6::Context &c
     std::vector<Fish> fishHerd;
     for (unsigned int i = 0; i < fishNumber; ++i) {
         glm::vec2 temp(p6::random::number(-ctx.aspect_ratio(), ctx.aspect_ratio()), p6::random::number(-1, 1));
-        double angle = p6::random::number(0.f, (M_PI*2));
+        double angle = p6::random::number(0.f, PI2);
         //double angle = 0.0;
         // std::cout << i << " : " << temp[0] << "|" << temp[1] << ", " << angle << std::endl; 
         fishHerd.push_back(Fish(temp, angle, SPEED, i));
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
 
 
     std::vector<Fish> herd = createHerd(FISH_NUMBER, ctx);
-    Fish mouseFish = Fish(ctx.mouse(), p6::random::number(0, (M_PI*2)), 0, 1000);
+    Fish mouseFish = Fish(ctx.mouse(), p6::random::number(0, PI2), 0, 1000);
 
 
     float r = p6::random::number(0, .5);
@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
         displayGUI();
 
         mouseFish.position(ctx.mouse());
-        mouseFish.angle(p6::random::number(-(M_PI*2), (M_PI*2)));
+        mouseFish.angle(p6::random::number(-PI2, PI2));
         mouseFish.draw(ctx);
         
         ctx.stroke_weight = 0.f;
