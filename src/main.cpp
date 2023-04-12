@@ -6,27 +6,25 @@
 #include <cmath>
 #include <iostream>
 
-// TO DO : 
-// - GUI puis on sera bons pour la 2D ????
-
 const float PI2 = 6.28f; //                              BEST VALUES :
-float SPEED = 0.01; //                            0.01
-float TURN_FACTOR = 1; //                         1
-const unsigned int FISH_NUMBER = 80; //                  80
-bool SCREEN_ENCOUNTER_METHOD = false; //                 false
-float ALIGNMENT_RADIUS = 0.5; //                  0.5
-float SEPARATION_RADIUS = 0.25; //                0.25
-float COHESION_RADIUS = 0.75; //                  0.75  
-const float MIN_SEPARATION_RADIUS = 0.125; //           0.125
-float WALLS_RADIUS = 0.5; //                      0.5
-bool DRAW_PARAMS = false; //                             false
+float SPEED = 0.01; //                                    0.01
+float TURN_FACTOR = 1; //                                 1
+const unsigned int FISH_NUMBER = 80; //                   80
+float ALIGNMENT_RADIUS = 0.5; //                          0.5
+float SEPARATION_RADIUS = 0.25; //                        0.25
+float COHESION_RADIUS = 0.75; //                          0.75  
+const float MIN_SEPARATION_RADIUS = 0.125; //             0.125
+float WALLS_RADIUS = 0.5; //                              0.5
+bool DRAW_PARAMS = false; //                              false
 
-float ALIGNMENT_STRENGTH = 0.0024; //             0.0024
-float SEPARATION_STRENGTH = 0.0048; //            0.0048
-const float MOUSE_FISH_SEPARATION_STRENGTH = 0.0096; // 0.0032
-float WALLS_STRENGTH = 0.0032; //                 0.0032
-float COHESION_STRENGTH = 0.005; //               0.005
-float TAIL_SIZE = 0.04; //                         0.04
+float ALIGNMENT_STRENGTH = 0.0024; //                     0.0024
+float SEPARATION_STRENGTH = 0.0048; //                    0.0048
+float MOUSE_FISH_SEPARATION_STRENGTH = 0; //              0.0032
+float WALLS_STRENGTH = 0.0032; //                         0.0032
+float COHESION_STRENGTH = 0.005; //                       0.005
+float TAIL_SIZE = 0.04; //                                0.04
+
+// - - - - - - C L A S S   F I S H - - - - - -
 
 class Fish {
 
@@ -56,7 +54,7 @@ class Fish {
         void draw(p6::Context& ctx);
 };
 
-// - - - - - - P A R A M E R T E S - - - - - -
+// - - - - - - P A R A M E R T E S   G U I - - - - - -
 
 void displayGUI () {
     ImGui::Begin("ACT ON THE FISH HERD");
@@ -71,6 +69,7 @@ void displayGUI () {
     ImGui::SliderFloat("Cohesion strength", &COHESION_STRENGTH, 0, 0.0196);
     ImGui::SliderFloat("Walls radius", &WALLS_RADIUS, 0, 1);
     ImGui::SliderFloat("Walls strength", &WALLS_STRENGTH, 0, 0.0196);
+    ImGui::SliderFloat("Mouse strength", &MOUSE_FISH_SEPARATION_STRENGTH, 0, 0.0196);
     if (ImGui::Button("Show Parameters"))
             DRAW_PARAMS = !DRAW_PARAMS;
     ImGui::End();
@@ -101,14 +100,11 @@ void Fish::move() {
         this->position()[1]+(std::sin(this->angle())*(this->speed()))
         );
     this->m_position = temp;
-    //this->m_angle+= p6::random::number(-0.1, 0.1);
-    //this->m_angle += 0.05;
-    //this->m_angle -= 0.01;
 }
 
 void Fish::turn(float direction) {
     this->m_angle += (direction*TURN_FACTOR);
-    this->angle(getInTheCircle(this->angle()));
+    // this->angle(getInTheCircle(this->angle()));
 }
 
 void drawParams(Fish fish, p6::Context &ctx) {
@@ -136,41 +132,7 @@ void Fish::draw(p6::Context& ctx) {
 
 }
 
-
-
-void passThrough(Fish &fish, const p6::Context &ctx) {
-    if (fish.position()[0] >= ctx.aspect_ratio() || fish.position()[0] <= -ctx.aspect_ratio()) {
-        glm::vec2 pos (fish.position()[0]*-1, fish.position()[1]);
-        fish.position(pos);
-    }
-    if (fish.position()[1] >= 1 || fish.position()[1] <= -1) {
-        glm::vec2 pos (fish.position()[0], fish.position()[1]*-1);
-        fish.position(pos);
-    }
-}
-
-void bounce(Fish &fish, const p6::Context &ctx) {
-    if (fish.position()[0] >= ctx.aspect_ratio() || fish.position()[0] <= -ctx.aspect_ratio()) {
-        fish.angle(PI2/2-fish.angle());
-    }
-    if (fish.position()[1] >= 1 || fish.position()[1] <= -1) {
-        fish.angle(PI2-fish.angle());
-    }
-}
-
-std::vector<Fish> createHerd(const unsigned int fishNumber, const p6::Context &ctx) {
-    std::vector<Fish> fishHerd;
-    for (unsigned int i = 0; i < fishNumber; ++i) {
-        glm::vec2 temp(p6::random::number(-ctx.aspect_ratio(), ctx.aspect_ratio()), p6::random::number(-1, 1));
-        double angle = p6::random::number(0.f, PI2);
-        //double angle = 0.0;
-        // std::cout << i << " : " << temp[0] << "|" << temp[1] << ", " << angle << std::endl; 
-        fishHerd.push_back(Fish(temp, angle, SPEED, i));
-    }
-    return fishHerd;
-}
-
-// - - - - - - G R O S S E S   F O N C T I O N S   L A - - - - - -
+// - - - - - - G R O S S E S   F O N C T I O N S - - - - - -
 
 float distance(Fish fish1, Fish fish2) {
     float distanceX = fish1.position()[0] - fish2.position()[0];
@@ -197,6 +159,21 @@ void Separation(Fish &currentFish, Fish &otherFish) {
         currentFish.turn(1/(20*dist)*direction*SEPARATION_STRENGTH);
     }
 }
+
+void Cohesion(Fish &currentFish, std::vector<Fish> &fishHerd) {
+    double averageDirection = 0;
+    double fishesInTheRadius = 0;
+    for (Fish &fish : fishHerd) {
+        if (distance(currentFish, fish) < COHESION_RADIUS) {
+            averageDirection += getInTheCircle(fish.angle());
+            ++fishesInTheRadius;
+        } 
+    }
+    averageDirection = averageDirection/fishesInTheRadius;
+    currentFish.turn((averageDirection-getInTheCircle(currentFish.angle()))*COHESION_STRENGTH);
+}
+
+// - - - - - - G E S T I O N   D E S   M U R S - - - - - -
 
 void avoidWall(Fish &fish, double distance, const int wall) {
     double dir = getInTheCircle(fish.angle());
@@ -227,17 +204,29 @@ void wallSeparation(Fish &fish, const p6::Context &ctx) {
     if (leftWallDistance < WALLS_RADIUS) avoidWall(fish, leftWallDistance, 3);
 }
 
-void Cohesion(Fish &currentFish, std::vector<Fish> &fishHerd) {
-    double averageDirection = 0;
-    double fishesInTheRadius = 0;
-    for (Fish &fish : fishHerd) {
-        if (distance(currentFish, fish) < COHESION_RADIUS) {
-            averageDirection += getInTheCircle(fish.angle());
-            ++fishesInTheRadius;
-        } 
+void passThrough(Fish &fish, const p6::Context &ctx) {
+    if (fish.position()[0] >= ctx.aspect_ratio() || fish.position()[0] <= -ctx.aspect_ratio()) {
+        glm::vec2 pos (fish.position()[0]*-1, fish.position()[1]);
+        fish.position(pos);
     }
-    averageDirection = averageDirection/fishesInTheRadius;
-    currentFish.turn((averageDirection-getInTheCircle(currentFish.angle()))*COHESION_STRENGTH);
+    if (fish.position()[1] >= 1 || fish.position()[1] <= -1) {
+        glm::vec2 pos (fish.position()[0], fish.position()[1]*-1);
+        fish.position(pos);
+    }
+}
+
+// - - - - - - C R E E R   L E S   B O I D S - - - - - -
+
+std::vector<Fish> createHerd(const unsigned int fishNumber, const p6::Context &ctx) {
+    std::vector<Fish> fishHerd;
+    for (unsigned int i = 0; i < fishNumber; ++i) {
+        glm::vec2 temp(p6::random::number(-ctx.aspect_ratio(), ctx.aspect_ratio()), p6::random::number(-1, 1));
+        double angle = p6::random::number(0.f, PI2);
+        //double angle = 0.0;
+        // std::cout << i << " : " << temp[0] << "|" << temp[1] << ", " << angle << std::endl; 
+        fishHerd.push_back(Fish(temp, angle, SPEED, i));
+    }
+    return fishHerd;
 }
 
 // - - - - - - M A I N - - - - - -
@@ -295,8 +284,7 @@ int main(int argc, char* argv[])
             }
             fish.speed(SPEED);
             Cohesion(fish, herd);
-            if (SCREEN_ENCOUNTER_METHOD) bounce(fish, ctx); 
-            else passThrough(fish, ctx);
+            passThrough(fish, ctx);
         }
     };
 
