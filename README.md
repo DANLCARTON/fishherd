@@ -27,5 +27,8 @@ Lors de leurs déplacement les boids doivent respecter trois règles :
 - **Mouse strength** : Définit à quel point le pointeur de souris déstabilise les boids. . *Valeur recommandée : 0.0196.*
 - **Show parameters** : Affiche clairement les paramètres *Separation radius*, *Alignment Radius* et *Cohesion radius*. Il est recommandé de mettre le paramètre *Size* au maximum avant d'activer ce paramètre. 
 
+## Petit aperçu
+https://www.instagram.com/p/CrgMbNatXRp/?utm_source=ig_web_button_share_sheet
+
 ## FISHH3RD
 Adaptation en 3D utilisant OpenGL 3 : [FISHH3RD](https://github.com/DANLCARTON/fishh3rd)
